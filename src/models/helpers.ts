@@ -1,12 +1,12 @@
 import mongoose, { Schema, type Model } from "mongoose";
 
-export function getModel<T = any>(name: string, schema: Schema): Model<T> {
-  return (mongoose.models[name] as Model<T>) || mongoose.model<T>(name, schema);
+export function getModel<T = Record<string, any>>(name: string, schema: any): Model<T> {
+  return ((mongoose.models && mongoose.models[name]) ? (mongoose.models[name] as Model<T>) : (mongoose.model(name, schema) as unknown as Model<T>));
 }
 
 export const baseOptions = {
   timestamps: true,
-  versionKey: false,
+  versionKey: false as const,
   toJSON: { virtuals: true },
   toObject: { virtuals: true },
 };

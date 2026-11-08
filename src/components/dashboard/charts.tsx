@@ -58,7 +58,7 @@ export function CollectionChart({ data }: { data: { month: string; amount: numbe
         />
         <Tooltip
           contentStyle={tooltipStyle}
-          formatter={(value: number) => [`PKR ${Number(value).toLocaleString()}`, "Collected"]}
+          formatter={(value: any) => [`PKR ${Number(value || 0).toLocaleString()}`, "Collected"]}
         />
         <Area type="monotone" dataKey="amount" stroke={COLORS.secondary} strokeWidth={2.5} fill="url(#collectionFill)" />
       </AreaChart>
@@ -113,7 +113,7 @@ export function ExpensePie({ data }: { data: { name: string; value: number }[] }
             <Cell key={i} fill={PIE_COLORS[i % PIE_COLORS.length]} />
           ))}
         </Pie>
-        <Tooltip contentStyle={tooltipStyle} formatter={(value: number) => `PKR ${Number(value).toLocaleString()}`} />
+        <Tooltip contentStyle={tooltipStyle} formatter={(value: any) => `PKR ${Number(value || 0).toLocaleString()}`} />
         <Legend iconType="circle" wrapperStyle={{ fontSize: 11 }} />
       </PieChart>
     </ResponsiveContainer>
