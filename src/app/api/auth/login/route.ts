@@ -63,8 +63,11 @@ export async function POST(req: Request) {
     });
 
     return NextResponse.json({ ok: true, role: user.role });
-  } catch (err) {
+  } catch (err: any) {
     console.error("[login]", err);
-    return NextResponse.json({ error: "Unable to sign in right now. Please try again." }, { status: 500 });
+    return NextResponse.json(
+      { error: err?.message || "Unable to sign in right now. Please try again." },
+      { status: 500 }
+    );
   }
 }
