@@ -3,7 +3,7 @@ import path from "path";
 
 const nextConfig: NextConfig = {
   outputFileTracingRoot: path.resolve(__dirname),
-  serverExternalPackages: ["mongoose", "mongodb-memory-server", "bcryptjs", "exceljs"],
+  serverExternalPackages: ["postgres", "bcryptjs", "exceljs"],
   experimental: {
     serverActions: {
       bodySizeLimit: "10mb",

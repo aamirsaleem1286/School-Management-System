@@ -24,10 +24,9 @@ function loadEnvFile(file: string) {
 
 loadEnvFile(".env.local");
 loadEnvFile(".env");
-process.env.MONGOMS_VERSION = process.env.MONGOMS_VERSION || "7.0.14";
-process.env.MONGOMS_DISABLE_POSTINSTALL = "1";
+process.env.SKIP_DEMO_SEED = "1";
 
-import mongoose from "mongoose";
+import mongoose, { beginBatch, flushBatch } from "../src/lib/pgdb";
 import bcrypt from "bcryptjs";
 import { dbConnect } from "../src/lib/db";
 import {
@@ -124,10 +123,7 @@ async function main() {
 
   if (RESET) {
     console.log("Resetting database...");
-    const collections = await mongoose.connection.db!.collections();
-    for (const col of collections) {
-      if (!col.collectionName.startsWith("system.")) await col.deleteMany({});
-    }
+    await mongoose.connection.db!.dropDatabase();
   } else {
     const existing = await User.countDocuments();
     if (existing > 0) {
@@ -137,6 +133,7 @@ async function main() {
   }
 
   console.log("Seeding organization & branches...");
+  beginBatch();
   const org = await Organization.create({
     name: "AI Solution IT School System",
     slug: "ai-solution-it",
@@ -1299,6 +1296,9 @@ async function main() {
     },
   ]);
 
+  console.log("Writing seed data to Postgres...");
+  await flushBatch();
+
   console.log("\n========================================================");
   console.log("  Seed complete!");
   console.log("========================================================");
@@ -1323,21 +1323,20 @@ async function main() {
   console.log("========================================================\n");
 }
 
+async function shutdown() {
+  await Promise.race([
+    mongoose.disconnect().catch(() => null),
+    new Promise((resolve) => setTimeout(resolve, 5000)),
+  ]);
+}
+
 main()
   .then(async () => {
-    await mongoose.disconnect();
-    const cache = (globalThis as any).__mongooseCache;
-    if (cache?.memory) {
-      await cache.memory.stop({ doCleanup: false, force: true }).catch(() => null);
-    }
+    await shutdown();
     process.exit(0);
   })
   .catch(async (err) => {
     console.error("Seed failed:", err);
-    await mongoose.disconnect().catch(() => null);
-    const cache = (globalThis as any).__mongooseCache;
-    if (cache?.memory) {
-      await cache.memory.stop({ doCleanup: false, force: true }).catch(() => null);
-    }
+    await shutdown();
     process.exit(1);
   });

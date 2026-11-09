@@ -1,7 +1,8 @@
-import mongoose, { Schema, type Model } from "mongoose";
+import type { Model } from "mongoose";
+import { Schema, model as registerModel } from "@/lib/pgdb";
 
 export function getModel<T = Record<string, any>>(name: string, schema: any): Model<T> {
-  return ((mongoose.models && mongoose.models[name]) ? (mongoose.models[name] as Model<T>) : (mongoose.model(name, schema) as unknown as Model<T>));
+  return registerModel(name, schema) as unknown as Model<T>;
 }
 
 export const baseOptions = {

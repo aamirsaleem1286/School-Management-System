@@ -1,4 +1,4 @@
-import { Schema } from "mongoose";
+import { Schema } from "@/lib/pgdb";
 import { baseOptions, getModel, ref } from "./helpers";
 
 const libraryBookSchema = new Schema(

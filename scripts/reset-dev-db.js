@@ -1,38 +1,44 @@
-const { execSync } = require("child_process");
 const fs = require("fs");
 const path = require("path");
 
-console.log("[db:down] Stopping any running local MongoDB instances...");
-
-try {
-  if (process.platform === "win32") {
-    try {
-      execSync("taskkill /F /IM mongod.exe", { stdio: "ignore" });
-      console.log("[db:down] Terminated mongod.exe processes.");
-    } catch {
-      // Ignore if no process found
+function loadEnvFile(file) {
+  const full = path.join(process.cwd(), file);
+  if (!fs.existsSync(full)) return;
+  for (const line of fs.readFileSync(full, "utf8").split(/\r?\n/)) {
+    const trimmed = line.trim();
+    if (!trimmed || trimmed.startsWith("#")) continue;
+    const eq = trimmed.indexOf("=");
+    if (eq === -1) continue;
+    const key = trimmed.slice(0, eq).trim();
+    let value = trimmed.slice(eq + 1).trim();
+    if ((value.startsWith('"') && value.endsWith('"')) || (value.startsWith("'") && value.endsWith("'"))) {
+      value = value.slice(1, -1);
     }
-  } else {
-    try {
-      execSync("killall mongod", { stdio: "ignore" });
-      console.log("[db:down] Terminated mongod processes.");
-    } catch {
-      // Ignore
-    }
+    if (!(key in process.env)) process.env[key] = value;
   }
-} catch (e) {
-  // Ignore
 }
 
-// Clean up stale lock files
-const lockFile = path.join(process.cwd(), ".data", "mongodb", "mongod.lock");
-if (fs.existsSync(lockFile)) {
+loadEnvFile(".env.local");
+loadEnvFile(".env");
+
+const url = process.env.DATABASE_URL || process.env.POSTGRES_URL || process.env.NEON_DATABASE_URL;
+
+if (!url) {
+  console.error("[db:down] DATABASE_URL is not set. Add it to .env.local first.");
+  process.exit(1);
+}
+
+(async () => {
+  const postgres = (await import("postgres")).default;
+  const sql = postgres(url, { prepare: false, max: 1, onnotice: () => undefined });
   try {
-    fs.unlinkSync(lockFile);
-    console.log("[db:down] Removed stale mongod.lock file.");
-  } catch (e) {
-    console.log("[db:down] Could not remove lock file (still held by a process):", e.message);
+    console.log("[db:down] Dropping all application data...");
+    await sql`drop table if exists app_documents`;
+    console.log("[db:down] Done. Run `npm run seed` to repopulate the database.");
+  } finally {
+    await sql.end({ timeout: 5 });
   }
-}
-
-console.log("[db:down] Done. You can now start the app fresh.");
+})().catch((err) => {
+  console.error("[db:down] Failed:", err.message);
+  process.exit(1);
+});

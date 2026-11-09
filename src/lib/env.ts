@@ -1,10 +1,12 @@
 const DEV_AUTH_SECRET = "dev-only-ai-solution-it-school-erp-secret-key-change-me-2026";
 
 export const env = {
-  MONGODB_URI: process.env.MONGODB_URI || "",
-  AUTH_SECRET:
-    process.env.AUTH_SECRET ||
-    (process.env.NODE_ENV === "production" ? "" : DEV_AUTH_SECRET),
+  DATABASE_URL:
+    process.env.DATABASE_URL ||
+    process.env.POSTGRES_URL ||
+    process.env.NEON_DATABASE_URL ||
+    "",
+  AUTH_SECRET: process.env.AUTH_SECRET || DEV_AUTH_SECRET,
   AUTH_SESSION_TTL: Number(process.env.AUTH_SESSION_TTL || 60 * 60 * 24 * 7),
   APP_URL: process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000",
   FILE_STORAGE: (process.env.FILE_STORAGE || "local") as "local" | "s3",
